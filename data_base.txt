@@ -1,0 +1,88 @@
+-- Create Person table
+CREATE TABLE person (
+    id SERIAL PRIMARY KEY,
+    dni VARCHAR(10) NOT NULL UNIQUE,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(10) NOT NULL,
+    address VARCHAR(200),
+    nationality VARCHAR(100) NOT NULL,
+    type_person VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Property table
+CREATE TABLE property (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    address VARCHAR(200) NOT NULL,
+    property_type VARCHAR(50),
+    area FLOAT,
+    description TEXT,
+    available BOOLEAN DEFAULT TRUE,
+    owner_id INTEGER NOT NULL REFERENCES person(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create RentalContract table
+CREATE TABLE rental_contract (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER NOT NULL REFERENCES person(id),
+    property_id INTEGER NOT NULL REFERENCES property(id),
+    rent_amount NUMERIC(10, 4) NOT NULL,
+    deposit_amount NUMERIC(10, 4),
+    status VARCHAR(20) DEFAULT 'active',
+    payment_date DATE NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Payment table
+CREATE TABLE payment (
+    id SERIAL PRIMARY KEY,
+    contract_id INTEGER NOT NULL REFERENCES rental_contract(id),
+    date DATE NOT NULL,
+    amount NUMERIC(10, 4) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes
+CREATE INDEX idx_person_dni ON person(dni);
+CREATE INDEX idx_property_available ON property(available);
+CREATE INDEX idx_contract_dates ON rental_contract(start_date, end_date);
+CREATE INDEX idx_payment_date ON payment(date);
+
+-- Create a function to update the updated_at timestamp
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create triggers to automatically update the updated_at column
+CREATE TRIGGER update_person_modtime
+    BEFORE UPDATE ON person
+    FOR EACH ROW
+    EXECUTE FUNCTION update_modified_column();
+
+CREATE TRIGGER update_property_modtime
+    BEFORE UPDATE ON property
+    FOR EACH ROW
+    EXECUTE FUNCTION update_modified_column();
+
+CREATE TRIGGER update_rental_contract_modtime
+    BEFORE UPDATE ON rental_contract
+    FOR EACH ROW
+    EXECUTE FUNCTION update_modified_column();
+
+CREATE TRIGGER update_payment_modtime
+    BEFORE UPDATE ON payment
+    FOR EACH ROW
+    EXECUTE FUNCTION update_modified_column();
