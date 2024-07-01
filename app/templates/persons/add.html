@@ -1,38 +1,41 @@
 {% extends "base.html" %}
 
-{% block title %}Add Person{% endblock %}
+{% block title %}Agregar nueva persona{% endblock %}
 
 {% block content %}
-<h1>Add New Person</h1>
+<h1>Agregar nueva persona</h1>
 <form method="post">
     <div class="mb-3">
         <label for="dni" class="form-label">DNI</label>
         <input type="text" class="form-control" id="dni" name="dni" required>
     </div>
     <div class="mb-3">
-        <label for="first_name" class="form-label">First Name</label>
+        <label for="first_name" class="form-label">Nombres</label>
         <input type="text" class="form-control" id="first_name" name="first_name" required>
     </div>
     <div class="mb-3">
-        <label for="last_name" class="form-label">Last Name</label>
+        <label for="last_name" class="form-label">Apellidos</label>
         <input type="text" class="form-control" id="last_name" name="last_name" required>
     </div>
     <div class="mb-3">
-        <label for="phone_number" class="form-label">Phone Number</label>
+        <label for="phone_number" class="form-label">Número-teléfono</label>
         <input type="tel" class="form-control" id="phone_number" name="phone_number" required>
     </div>
     <div class="mb-3">
-        <label for="address" class="form-label">Address</label>
+        <label for="address" class="form-label">Dirección</label>
         <input type="text" class="form-control" id="address" name="address">
     </div>
     <div class="mb-3">
-        <label for="nationality" class="form-label">Nationality</label>
+        <label for="nationality" class="form-label">Nacionalidad</label>
         <input type="text" class="form-control" id="nationality" name="nationality" required>
     </div>
     <div class="mb-3">
-        <label for="type_person" class="form-label">Type of Person</label>
-        <input type="text" class="form-control" id="type_person" name="type_person">
+        <label for="type_person" class="form-label">Tipo de persona</label>
+        <select name="type_person" id="type_person" class="form-control" >
+            <option value="inquilino">Inquilino</option>
+            <option value="propietario">Propietario</option>
+        </select>
     </div>
-    <button type="submit" class="btn btn-primary">Add Person</button>
+    <button type="submit" class="btn btn-primary">Agregar persona</button>
 </form>
 {% endblock %}

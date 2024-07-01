@@ -9,10 +9,12 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('list_persons') }}">Rental Management</a>
+            <a class="navbar-brand" href="{{ url_for('list_rental_contracts') }}">Gestión de alquiler</a>
             <div class="navbar-nav">
-                <a class="nav-item nav-link" href="{{ url_for('list_persons') }}">Persons</a>
-                <a class="nav-item nav-link" href="{{ url_for('list_properties') }}">Properties</a>
+                <a class="nav-item nav-link" href="{{ url_for('list_persons') }}">Personas</a>
+                <a class="nav-item nav-link" href="{{ url_for('list_properties') }}">Propiedades</a>
+                <a class="nav-item nav-link" href="{{ url_for('list_rental_contracts') }}">Contratos de alquiler</a>
+                <a class="nav-item nav-link" href="{{ url_for('list_payments') }}">Pagos</a>
                 <!-- Add more navigation items here -->
             </div>
         </div>

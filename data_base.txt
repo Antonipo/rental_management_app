@@ -47,6 +47,7 @@ CREATE TABLE payment (
     contract_id INTEGER NOT NULL REFERENCES rental_contract(id),
     date DATE NOT NULL,
     amount NUMERIC(10, 4) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -86,3 +87,40 @@ CREATE TRIGGER update_payment_modtime
     BEFORE UPDATE ON payment
     FOR EACH ROW
     EXECUTE FUNCTION update_modified_column();
+
+CREATE OR REPLACE FUNCTION create_initial_payment()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Solo crea un pago si el estado del contrato es 'active'
+    IF NEW.status = 'active' THEN
+        INSERT INTO payment (contract_id, date, amount, status)
+        VALUES (NEW.id, NEW.payment_date, NEW.rent_amount, 'pending');
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER create_payment_on_contract_insert
+AFTER INSERT ON rental_contract
+FOR EACH ROW
+EXECUTE FUNCTION create_initial_payment();
+
+    rental_management_app
+    ├──app/
+    │   ├── templates/
+    │   │   ├── base.html
+    │   │   ├── persons/
+    │   │   │   ├── list.html
+    │   │   │   ├── add.html
+    │   │   │   └── edit.html
+    │   │   ├── properties/
+    │   │   │   ├── list.html
+    │   │   │   ├── add.html
+    │   │   │   └── edit.html
+    │   │   ├──base.html
+    │   │   └──index.html
+    │   ├── __init__.py
+    │   ├── models.py
+    │   └── routes.py
+    ├──config.py
+    └──run.py

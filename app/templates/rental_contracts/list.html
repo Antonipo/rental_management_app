@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Rental Contracts List{% endblock %}
+
+{% block content %}
+<h1>Lista de contratos de alquiler</h1>
+<a href="{{ url_for('add_rental_contract') }}" class="btn btn-primary mb-3">Agregar contrato de alquiler</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Inquilino</th>
+            <th>Propietario</th>
+            <th>Monto de alquiler</th>
+            <th>Monto de depósito</th>
+            <th>Estado</th>
+            <th>Fecha del primer pago</th>
+            <th>Fecha de inicio</th>
+            <th>Fecha de fin</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for contract in rental_contracts %}
+        <tr>
+            <td>{{ contract.tenant_first_name }} {{ contract.tenant_last_name }}</td>
+            <td>{{ contract.property_name }}</td>
+            <td>{{ contract.rent_amount }}</td>
+            <td>{{ contract.deposit_amount }}</td>
+            <td>{{ contract.status }}</td>
+            <td>{{ contract.payment_date }}</td>
+            <td>{{ contract.start_date }}</td>
+            <td>{{ contract.end_date or 'N/A' }}</td>
+            <td>
+                <a href="{{ url_for('edit_rental_contract', id=contract.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                <form action="{{ url_for('delete_rental_contract', id=contract.id) }}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this rental contract?')">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

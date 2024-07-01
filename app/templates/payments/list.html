@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Pagos pendientes{% endblock %}
+
+{% block content %}
+<h1>Pagos pendientes</h1>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Contrato</th>
+            <th>Fecha de pago</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Opciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for payment, contract, property in payments %}
+        <tr>
+            <td>{{ property.name }}</td>
+            <td>{{ payment.date.strftime('%d/%m/%Y') }}</td>
+            <td>{{ payment.amount }}</td>
+            <td>{{ payment.status }}</td>
+            <td>
+                <form action="{{ url_for('pay_rent', id=payment.id) }}" method="post">
+                    <button type="submit" class="btn btn-sm btn-warning btn-outline-success">Marcar como Pagado</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

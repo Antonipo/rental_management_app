@@ -45,9 +45,10 @@ class RentalContract(db.Model):
 
 class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    contrato_id = db.Column(db.Integer, db.ForeignKey('rental_contract.id'), nullable=False)
+    contract_id = db.Column(db.Integer, db.ForeignKey('rental_contract.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     amount = db.Column(db.Numeric(10, 4), nullable=False)
+    status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     # Agregar más campos según sea necesario

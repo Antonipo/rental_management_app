@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Persons List{% endblock %}
+{% block title %}Lista de personas{% endblock %}
 
 {% block content %}
-<h1>Persons List</h1>
-<a href="{{ url_for('add_person') }}" class="btn btn-primary mb-3">Add New Person</a>
+<h1>Lista de personas</h1>
+<a href="{{ url_for('add_person') }}" class="btn btn-primary mb-3">Agregar nueva persona</a>
 <table class="table table-striped">
     <thead>
         <tr>
             <th>DNI</th>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Nationality</th>
-            <th>Actions</th>
+            <th>Nombre</th>
+            <th>Número</th>
+            <th>Nacionalidad</th>
+            <th>Opciones</th>
         </tr>
     </thead>
     <tbody>

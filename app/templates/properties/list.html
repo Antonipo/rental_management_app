@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Properties List{% endblock %}
+{% block title %}Lista de propiedades{% endblock %}
 
 {% block content %}
-<h1>Properties List</h1>
-<a href="{{ url_for('add_property') }}" class="btn btn-primary mb-3">Add New Property</a>
+<h1>Lista de propiedades</h1>
+<a href="{{ url_for('add_property') }}" class="btn btn-primary mb-3">Agregar nueva propiedad</a>
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Name</th>
-            <th>Address</th>
-            <th>Type</th>
-            <th>Area</th>
-            <th>Available</th>
-            <th>Owner</th>
-            <th>Actions</th>
+            <th>Nombre</th>
+            <th>Dirección</th>
+            <th>Tipo</th>
+            <th>Área</th>
+            <th>Disponible</th>
+            <th>Propietario</th>
+            <th>Opciones</th>
         </tr>
     </thead>
     <tbody>
@@ -25,7 +25,7 @@
             <td>{{ property.property_type }}</td>
             <td>{{ property.area }}</td>
             <td>{{ 'Yes' if property.available else 'No' }}</td>
-            <td>{{ property.owner_id.first_name }} {{ property.owner_id.last_name }}</td>
+            <td>{{ property.owner_first_name }} {{ property.owner_last_name }}</td>
             <td>
                 <a href="{{ url_for('edit_property', id=property.id) }}" class="btn btn-sm btn-warning">Edit</a>
                 <form action="{{ url_for('delete_property', id=property.id) }}" method="post" class="d-inline">
@@ -36,8 +36,4 @@
         {% endfor %}
     </tbody>
 </table>
-
-<script>
-    console.log(properties)
-</script>
 {% endblock %}
