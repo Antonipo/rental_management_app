@@ -135,8 +135,23 @@ def delete_property(id):
 
 ## routes rental_contract
 @app.route('/rental_contracts')
-def list_rental_contracts():
-    rental_contracts = RentalContract.query.join(Person, RentalContract.tenant_id == Person.id)\
+@app.route('/rental_contracts/<int:id>')
+def list_rental_contracts(id:int=None):
+    if id:
+        rental_contracts = RentalContract.query.join(Property, Person.id == Property.owner_id).join(RentalContract, Property.id == RentalContract.property_id).add_columns(
+            RentalContract.id,
+            RentalContract.rent_amount,
+            RentalContract.deposit_amount,
+            RentalContract.status,
+            RentalContract.payment_date,
+            RentalContract.start_date,
+            RentalContract.end_date,
+            Person.first_name.label('tenant_first_name'),
+            Person.last_name.label('tenant_last_name'),
+            Property.name.label('property_name')
+        ).filter(Person.id == id)
+    else:
+        rental_contracts = RentalContract.query.join(Person, RentalContract.tenant_id == Person.id)\
         .join(Property, RentalContract.property_id == Property.id)\
         .add_columns(
             RentalContract.id,

@@ -15,7 +15,12 @@
     </div>
     <div class="mb-3">
         <label for="property_type" class="form-label">Tipo de propiedad</label>
-        <input type="text" class="form-control" id="property_type" name="property_type" required>
+        <select name="property_type" id="property_type" class="form-control" required>
+            <option value="house">Casa</option>
+            <option value="department">Departamento</option>
+            <option value="room">Habitación</option>
+            <option value="shop">Local Comercial</option>
+        </select>
     </div>
     <div class="mb-3">
         <label for="area" class="form-label">Área m2</label>

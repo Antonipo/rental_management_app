@@ -15,7 +15,12 @@
     </div>
     <div class="mb-3">
         <label for="property_type" class="form-label">Tipo de propiedad</label>
-        <input type="text" class="form-control" id="property_type" name="property_type" value="{{ property.property_type }}" required>
+        <select name="property_type" id="property_type" class="form-control" required>
+            <option value="house" {% if property.property_type == 'house' %}selected{% endif %}>Casa</option>
+            <option value="department" {% if property.property_type == 'department' %}selected{% endif %}>Departamento</option>
+            <option value="room" {% if property.property_type == 'room' %}selected{% endif %}>Habitación</option>
+            <option value="shop" {% if property.property_type == 'shop' %}selected{% endif %}>Local Comercial</option>
+        </select>
     </div>
     <div class="mb-3">
         <label for="area" class="form-label">Área m2</label>
