@@ -32,8 +32,8 @@
     <div class="mb-3">
         <label for="type_person" class="form-label">Tipo de persona</label>
         <select name="type_person" id="type_person" class="form-control">
-            <option value="active" {% if person.type_person == 'inquilino' %}selected{% endif %}>Inquilino</option>
-            <option value="inactive" {% if person.type_person == 'propietario' %}selected{% endif %}>Propietario</option>
+            <option value="inquilino" {% if person.type_person == 'inquilino' %}selected{% endif %}>Inquilino</option>
+            <option value="propietario" {% if person.type_person == 'propietario' %}selected{% endif %}>Propietario</option>
         </select>
     </div>
     <button type="submit" class="btn btn-primary">Actualizar persona</button>

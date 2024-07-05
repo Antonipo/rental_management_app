@@ -16,6 +16,7 @@
     <div class="mb-3">
         <label for="property_type" class="form-label">Tipo de propiedad</label>
         <select name="property_type" id="property_type" class="form-control" required>
+            <option value="">Selecciona Tipo de propiedad</option>
             <option value="house">Casa</option>
             <option value="department">Departamento</option>
             <option value="room">Habitación</option>
@@ -37,10 +38,14 @@
     <div class="mb-3">
         <label for="owner_id" class="form-label">Propietario</label>
         <select class="form-select" id="owner_id" name="owner_id" required>
-            <option value="">Selecciona propietario</option>
-            {% for person in persons %}
-            <option value="{{ person.id }}">{{ person.first_name }} {{ person.last_name }}</option>
-            {% endfor %}
+            {% if persons is sequence %}
+                <option value="">Selecciona propietario</option>
+                {% for person in persons %}
+                    <option value="{{ person.id }}">{{ person.first_name }} {{ person.last_name }}</option>
+                {% endfor %}
+            {% else %}
+                <option value="{{ persons.id }}">{{ persons.first_name }} {{ persons.last_name }}</option>
+            {% endif %}
         </select>
     </div>
     <button type="submit" class="btn btn-primary">Agregar propiedad</button>

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Agregar nueva persona{% endblock %}
+{% block title %}Agregar {{ type }}{% endblock %}
 
 {% block content %}
-<h1>Agregar nueva persona</h1>
+<h1>Agregar {{ type }}</h1>
 <form method="post">
     <div class="mb-3">
         <label for="dni" class="form-label">DNI</label>
@@ -32,8 +32,8 @@
     <div class="mb-3">
         <label for="type_person" class="form-label">Tipo de persona</label>
         <select name="type_person" id="type_person" class="form-control" >
-            <option value="inquilino">Inquilino</option>
-            <option value="propietario">Propietario</option>
+            <option value="inquilino" {% if type == 'inquilino' %}selected{% endif %}>Inquilino</option>
+            <option value="propietario" {% if type == 'propietario' %}selected{% endif %}>Propietario</option>
         </select>
     </div>
     <button type="submit" class="btn btn-primary">Agregar persona</button>

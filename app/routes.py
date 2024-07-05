@@ -12,31 +12,39 @@ def format_date(date:str):
 
 @app.route('/')
 def index():
-    return redirect(url_for('list_rental_contracts'))
+    return redirect(url_for('persons',type='propietario'))
 
 ## persons
 @app.route('/persons')
-def list_persons():
-    persons = Person.query.all()
-    return render_template('persons/list.html', persons=persons)
+@app.route('/persons/<string:type>')
+def list_persons(type:str=None):
+    if type:
+        persons = Person.query.filter(Person.type_person ==type)
+    else:
+        persons = Person.query.all()
+    return render_template('persons/list.html', persons=persons,type=type)
 
 @app.route('/persons/add', methods=['GET', 'POST'])
-def add_person():
+@app.route('/persons/add/<string:type>', methods=['GET', 'POST'])
+def add_person(type:str=None):
     if request.method == 'POST':
-        new_person = Person(
-            dni=request.form['dni'],
-            first_name=request.form['first_name'],
-            last_name=request.form['last_name'],
-            phone_number=request.form['phone_number'],
-            address=request.form['address'],
-            nationality=request.form['nationality'],
-            type_person=request.form['type_person']
-        )
-        db.session.add(new_person)
-        db.session.commit()
-        flash('Person added successfully', 'success')
-        return redirect(url_for('list_persons'))
-    return render_template('persons/add.html')
+        try:
+            new_person = Person(
+                dni=request.form['dni'],
+                first_name=request.form['first_name'],
+                last_name=request.form['last_name'],
+                phone_number=request.form['phone_number'],
+                address=request.form['address'],
+                nationality=request.form['nationality'],
+                type_person=request.form['type_person']
+            )
+            db.session.add(new_person)
+            db.session.commit()
+            flash('Person added successfully', 'success')
+            return redirect(url_for('list_persons',type=type))
+        except Exception as error:
+            flash(f'Error al agregar - msg: {error}', 'danger')
+    return render_template('persons/add.html',type=type)
 
 @app.route('/persons/edit/<int:id>', methods=['GET', 'POST'])
 def edit_person(id):
@@ -52,7 +60,7 @@ def edit_person(id):
         person.updated_at = datetime.utcnow()
         db.session.commit()
         flash('Person updated successfully', 'success')
-        return redirect(url_for('list_persons'))
+        return redirect(url_for('list_persons',type=person.type_person))
     return render_template('persons/edit.html', person=person)
 
 @app.route('/persons/delete/<int:id>', methods=['POST'])
@@ -70,22 +78,41 @@ def delete_person(id):
 ## routs of properties
 
 @app.route('/properties')
-def list_properties():
-    properties = Property.query.join(Person, Property.owner_id == Person.id).add_columns(
-        Property.id,
-        Property.name,
-        Property.address,
-        Property.property_type,
-        Property.area,
-        Property.available,
-        Person.first_name.label('owner_first_name'),
-        Person.last_name.label('owner_last_name')
-    ).all()
-    return render_template('properties/list.html', properties=properties)
+@app.route('/properties/<int:id>')
+def list_properties(id:int=None):
+    if id:
+        person= Person.query.get_or_404(id)
+        properties = Property.query.join(Person, Property.owner_id == Person.id).add_columns(
+            Property.id,
+            Property.name,
+            Property.address,
+            Property.property_type,
+            Property.area,
+            Property.available,
+            Person.first_name.label('owner_first_name'),
+            Person.last_name.label('owner_last_name'),
+            Person.id.label('owner_id')
+        ).filter(Person.id==id)
+    else:
+        properties = Property.query.join(Person, Property.owner_id == Person.id).add_columns(
+            Property.id,
+            Property.name,
+            Property.address,
+            Property.property_type,
+            Property.area,
+            Property.available,
+            Person.first_name.label('owner_first_name'),
+            Person.last_name.label('owner_last_name')
+        ).all()
+    return render_template('properties/list.html', properties=properties,person=person)
 
 @app.route('/properties/add', methods=['GET', 'POST'])
-def add_property():
-    persons = Person.query.all()
+@app.route('/properties/add/<int:id>', methods=['GET', 'POST'])
+def add_property(id:int=None):
+    if id:
+        persons = Person.query.get_or_404(id)
+    else:
+        persons = Person.query.all()
     if request.method == 'POST':
         new_property = Property(
             name=request.form['name'],
@@ -99,7 +126,7 @@ def add_property():
         db.session.add(new_property)
         db.session.commit()
         flash('Property added successfully', 'success')
-        return redirect(url_for('list_properties'))
+        return redirect(url_for('list_properties',id=int(request.form['owner_id'])))
     return render_template('properties/add.html', persons=persons)
 
 @app.route('/properties/edit/<int:id>', methods=['GET', 'POST'])
@@ -117,13 +144,14 @@ def edit_property(id):
         property.updated_at = datetime.utcnow()
         db.session.commit()
         flash('Property updated successfully', 'success')
-        return redirect(url_for('list_properties'))
+        return redirect(url_for('list_properties',id=int(request.form['owner_id'])))
     return render_template('properties/edit.html', property=property, persons=persons)
 
 @app.route('/properties/delete/<int:id>', methods=['POST'])
 def delete_property(id):
     try:
         property = Property.query.get_or_404(id)
+        owner_id = property.owner_id
         db.session.delete(property)
         db.session.commit()
         flash('Propiedad eliminado correctamente', 'success')
@@ -131,13 +159,14 @@ def delete_property(id):
         flash(f'Error a eliminar propiedad, msg {error}', 'danger')
         print(error)
 
-    return redirect(url_for('list_properties'))
+    return redirect(url_for('list_properties',id=owner_id))
 
 ## routes rental_contract
 @app.route('/rental_contracts')
 @app.route('/rental_contracts/<int:id>')
 def list_rental_contracts(id:int=None):
     if id:
+        person = Person.query.get_or_404(id)
         rental_contracts = RentalContract.query.join(Property, Person.id == Property.owner_id).join(RentalContract, Property.id == RentalContract.property_id).add_columns(
             RentalContract.id,
             RentalContract.rent_amount,
@@ -150,6 +179,7 @@ def list_rental_contracts(id:int=None):
             Person.last_name.label('tenant_last_name'),
             Property.name.label('property_name')
         ).filter(Person.id == id)
+        return render_template('rental_contracts/list.html', rental_contracts=rental_contracts,person=person)
     else:
         rental_contracts = RentalContract.query.join(Person, RentalContract.tenant_id == Person.id)\
         .join(Property, RentalContract.property_id == Property.id)\
@@ -168,12 +198,14 @@ def list_rental_contracts(id:int=None):
     return render_template('rental_contracts/list.html', rental_contracts=rental_contracts)
 
 @app.route('/rental_contracts/add', methods=['GET', 'POST'])
-def add_rental_contract():
-    tenants = Person.query.all()
-    properties = Property.query.filter_by(available=True).all()
+@app.route('/rental_contracts/add/<int:id>', methods=['GET', 'POST'])
+def add_rental_contract(id:int=None):
+    person = Person.query.get_or_404(id)
+    tenants = Person.query.filter(Person.type_person =='inquilino')
+    properties = Property.query.filter_by(available=True,owner_id=id).all()
     
     if request.method == 'POST':
-
+        person_id = int(request.form['person_id'])
         new_contract = RentalContract(
             tenant_id=int(request.form['tenant_id']),
             property_id=int(request.form['property_id']),
@@ -193,9 +225,9 @@ def add_rental_contract():
         db.session.commit()
         
         flash('Rental contract added successfully', 'success')
-        return redirect(url_for('list_rental_contracts'))
+        return redirect(url_for('list_rental_contracts',id=person_id))
     
-    return render_template('rental_contracts/add.html', tenants=tenants, properties=properties)
+    return render_template('rental_contracts/add.html', tenants=tenants, properties=properties,person=person)
 
 @app.route('/rental_contracts/edit/<int:id>', methods=['GET', 'POST'])
 def edit_rental_contract(id):

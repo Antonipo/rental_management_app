@@ -6,18 +6,19 @@
 <h1>Agregar contrato de alquiler</h1>
 <form method="post">
     <div class="form-group">
+        <input type="number" id="person_id" name="person_id"  class="form-control" value="{{ person.id }}" hidden>
         <label for="tenant_id">Inquilino</label>
         <select name="tenant_id" id="tenant_id" class="form-control" required>
-            <option value="">Select an tenant</option>
+            <option value="">Selecciona un inquilino</option>
             {% for tenant in tenants %}
             <option value="{{ tenant.id }}">{{ tenant.first_name }} {{ tenant.last_name }}</option>
             {% endfor %}
         </select>
     </div>
     <div class="form-group">
-        <label for="property_id">Propietario</label>
+        <label for="property_id">Propiedad</label>
         <select name="property_id" id="property_id" class="form-control" required>
-            <option value="">Select a property</option>
+            <option value="">selecciona una propiedad</option>
             {% for property in properties %}
             <option value="{{ property.id }}">{{ property.name }}</option>
             {% endfor %}
@@ -25,11 +26,11 @@
     </div>
     <div class="form-group">
         <label for="rent_amount">Monto de alquiler</label>
-        <input type="number" step="100.00" name="rent_amount" id="rent_amount" class="form-control" required>
+        <input type="number" step="00.10" name="rent_amount" id="rent_amount" class="form-control" required>
     </div>
     <div class="form-group">
-        <label for="deposit_amount">Monto de depósito</label>
-        <input type="number" step="100.00" name="deposit_amount" id="deposit_amount" class="form-control" required>
+        <label for="deposit_amount">Monto de garantía</label>
+        <input type="number" step="00.10" name="deposit_amount" id="deposit_amount" class="form-control" required>
     </div>
     <div class="form-group">
         <label for="status">Estado</label>

@@ -3,13 +3,13 @@
 {% block title %}Rental Contracts List{% endblock %}
 
 {% block content %}
-<h1>Lista de contratos de alquiler</h1>
-<a href="{{ url_for('add_rental_contract') }}" class="btn btn-primary mb-3">Agregar contrato de alquiler</a>
+<h1>Contratos de alquiler de {{ person.first_name }} {{ person.last_name }}</h1>
+<a href="{{ url_for('add_rental_contract', id = person.id ) }}" class="btn btn-primary mb-3">Agregar contrato de alquiler</a>
 <table class="table table-striped">
     <thead>
         <tr>
             <th>Inquilino</th>
-            <th>Propietario</th>
+            <th>Propiedad</th>
             <th>Monto de alquiler</th>
             <th>Monto de depósito</th>
             <th>Estado</th>
