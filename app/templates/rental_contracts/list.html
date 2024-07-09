@@ -4,7 +4,8 @@
 
 {% block content %}
 <h1>Contratos de alquiler de {{ person.first_name }} {{ person.last_name }}</h1>
-<a href="{{ url_for('add_rental_contract', id = person.id ) }}" class="btn btn-primary mb-3">Agregar contrato de alquiler</a>
+<a href="{{ url_for('add_property',id = person.id) }}" class="btn btn-primary mb-3">Agregar nueva propiedad</a>
+<a href="{{ url_for('list_properties', id=person.id) }}" class="btn btn-primary mb-3">Ver propiedades</a>
 <table class="table table-striped">
     <thead>
         <tr>
@@ -21,23 +22,80 @@
     </thead>
     <tbody>
         {% for contract in rental_contracts %}
-        <tr>
-            <td>{{ contract.tenant_first_name }} {{ contract.tenant_last_name }}</td>
-            <td>{{ contract.property_name }}</td>
-            <td>{{ contract.rent_amount }}</td>
-            <td>{{ contract.deposit_amount }}</td>
-            <td>{{ contract.status }}</td>
-            <td>{{ contract.payment_date }}</td>
-            <td>{{ contract.start_date }}</td>
-            <td>{{ contract.end_date or 'N/A' }}</td>
-            <td>
-                <a href="{{ url_for('edit_rental_contract', id=contract.id) }}" class="btn btn-sm btn-warning">Edit</a>
-                <form action="{{ url_for('delete_rental_contract', id=contract.id) }}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this rental contract?')">Delete</button>
-                </form>
-            </td>
-        </tr>
+        {% if contract.alert=='green' %}
+            <tr>
+                <td>{{ contract.tenant }}</td>
+                <td>{{ contract.property_name }}</td>
+                <td>{{ "%.2f"|format(contract.rent_amount|round(2)) }}</td>
+                <td>{{ "%.2f"|format(contract.deposit_amount|round(2)) }}</td>
+                <td>{{ contract.status }}</td>
+                <td>{{ contract.payment_date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ contract.start_date.strftime('%d/%m/%Y') }}</td>
+                <td>
+                {% if contract.end_date %}
+                    {{ contract.end_date.strftime('%d/%m/%Y') }}
+                {% else %}
+                    N/A
+                {% endif %}
+                </td>
+                <td>
+                    {% if contract.status != 'inactive' %}
+                        <a href="{{ url_for('edit_rental_contract', id=contract.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                    {% endif %}
+                    <form action="{{ url_for('delete_rental_contract', id=contract.id) }}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this rental contract?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% elif contract.alert=='yellow' %}
+            <tr class="table-warning">
+                <td>{{ contract.tenant }}</td>
+                <td>{{ contract.property_name }}</td>
+                <td>{{ "%.2f"|format(contract.rent_amount|round(2)) }}</td>
+                <td>{{ "%.2f"|format(contract.deposit_amount|round(2)) }}</td>
+                <td>{{ contract.status }}</td>
+                <td>{{ contract.payment_date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ contract.start_date.strftime('%d/%m/%Y') }}</td>
+                <td>
+                {% if contract.end_date %}
+                    {{ contract.end_date.strftime('%d/%m/%Y') }}
+                {% else %}
+                    N/A
+                {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('edit_rental_contract', id=contract.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                    <form action="{{ url_for('delete_rental_contract', id=contract.id) }}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this rental contract?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr class="table-danger">
+                <td>{{ contract.tenant }}</td>
+                <td>{{ contract.property_name }}</td>
+                <td>{{ "%.2f"|format(contract.rent_amount|round(2)) }}</td>
+                <td>{{ "%.2f"|format(contract.deposit_amount|round(2)) }}</td>
+                <td>{{ contract.status }}</td>
+                <td>{{ contract.payment_date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ contract.start_date.strftime('%d/%m/%Y') }}</td>
+                <td>
+                {% if contract.end_date %}
+                    {{ contract.end_date.strftime('%d/%m/%Y') }}
+                {% else %}
+                    N/A
+                {% endif %}
+                </td>
+                <td>
+                    <!-- <a href="{{ url_for('edit_rental_contract', id=contract.id) }}" class="btn btn-sm btn-warning">Edit</a> -->
+                    <form action="{{ url_for('delete_rental_contract', id=contract.id) }}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this rental contract?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% endif %}
         {% endfor %}
     </tbody>
 </table>
+<a href="{{ url_for('add_rental_contract', id = person.id ) }}" class="btn btn-primary mb-3">Agregar contrato de alquiler</a>
 {% endblock %}

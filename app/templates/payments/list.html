@@ -3,11 +3,13 @@
 {% block title %}Pagos pendientes{% endblock %}
 
 {% block content %}
-<h1>Pagos pendientes</h1>
+<h1>Pagos pendientes del mes</h1>
 <table class="table table-striped">
     <thead>
         <tr>
             <th>Contrato</th>
+            <th>Inquilino</th>
+            <th>Teléfono</th>
             <th>Fecha de pago</th>
             <th>Monto</th>
             <th>Estado</th>
@@ -15,15 +17,21 @@
         </tr>
     </thead>
     <tbody>
-        {% for payment, contract, property in payments %}
+        {% for payment, contract, property,tenant,phone, alert in payments %}
         <tr>
             <td>{{ property.name }}</td>
+            <td>{{ tenant }}</td>
+            <td>{{ phone }}</td>
             <td>{{ payment.date.strftime('%d/%m/%Y') }}</td>
-            <td>{{ payment.amount }}</td>
+            <td>{{ "%.2f"|format(payment.amount|round(2)) }}</td>
             <td>{{ payment.status }}</td>
             <td>
                 <form action="{{ url_for('pay_rent', id=payment.id) }}" method="post">
-                    <button type="submit" class="btn btn-sm btn-warning btn-outline-success">Marcar como Pagado</button>
+                    {% if alert == 'red' %}
+                        <button type="submit" class="btn  btn-danger ">Marcar como Pagado</button>
+                    {% else %}
+                        <button type="submit" class="btn  btn-warning ">Marcar como Pagado</button>
+                    {% endif %}
                 </form>
             </td>
         </tr>

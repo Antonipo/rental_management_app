@@ -4,7 +4,8 @@
 
 {% block content %}
 <h1>Propiedades de {{ person.first_name }} {{ person.last_name }}</h1>
-<a href="{{ url_for('add_property',id = person.id) }}" class="btn btn-primary mb-3">Agregar nueva propiedad</a>
+<a href="{{ url_for('add_rental_contract', id = person.id ) }}" class="btn btn-primary mb-3">Agregar contrato de alquiler</a>
+<a href="{{ url_for('list_rental_contracts', id=person.id) }}" class="btn btn-primary mb-3">Ver contratos</a>
 <table class="table table-striped">
     <thead>
         <tr>
@@ -23,7 +24,7 @@
             <td>{{ property.name }}</td>
             <td>{{ property.address }}</td>
             <td>{{ property.property_type }}</td>
-            <td>{{ property.area }}</td>
+            <td>{{ "%.2f"|format(property.area|round(2)) }}</td>
             <td>{{ 'Yes' if property.available else 'No' }}</td>
             <td>{{ property.owner_first_name }} {{ property.owner_last_name }}</td>
             <td>
@@ -36,4 +37,5 @@
         {% endfor %}
     </tbody>
 </table>
+<a href="{{ url_for('add_property',id = person.id) }}" class="btn btn-primary mb-3">Agregar nueva propiedad</a>
 {% endblock %}

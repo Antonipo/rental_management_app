@@ -37,6 +37,7 @@ CREATE TABLE rental_contract (
     payment_date DATE NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE,
+    count BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

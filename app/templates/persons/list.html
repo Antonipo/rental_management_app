@@ -5,11 +5,9 @@
 {% block content %}
 {% if type == 'propietario' %}
     <h1>Lista de Propietarios</h1>
-    <a href="{{ url_for('add_person',type='propietario') }}" class="btn btn-primary mb-3">Agregar propietario</a>
     <a href="{{ url_for('list_persons', type='inquilino') }}" class="btn btn-primary mb-3">Ver inquilinos</a>
 {% else %}
     <h1>Lista de Inquilinos</h1>
-    <a href="{{ url_for('add_person',type='inquilino') }}" class="btn btn-primary mb-3">Agregar Inquilino</a>
     <a href="{{ url_for('list_persons', type='propietario') }}" class="btn btn-primary mb-3">Ver propietarios</a>
 {% endif %}
 <table class="table table-striped">
@@ -32,8 +30,8 @@
             <td>
                 <a href="{{ url_for('edit_person', id=person.id) }}" class="btn btn-sm btn-warning">Edit</a>
                 {% if person.type_person == 'propietario' %}
-                    <a href="{{ url_for('list_rental_contracts', id=person.id) }}" class="btn btn-sm btn-warning">Ver contratos</a>
                     <a href="{{ url_for('list_properties', id=person.id) }}" class="btn btn-sm btn-warning">Ver propiedades</a>
+                    <a href="{{ url_for('list_rental_contracts', id=person.id) }}" class="btn btn-sm btn-warning">Ver contratos</a>
                 {% endif %}
                 <form action="{{ url_for('delete_person', id=person.id) }}" method="post" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this person?')">Delete</button>
@@ -43,4 +41,10 @@
         {% endfor %}
     </tbody>
 </table>
+
+{% if type == 'propietario' %}
+    <a href="{{ url_for('add_person',type='propietario') }}" class="btn btn-primary mb-3">Agregar propietario</a>
+{% else %}
+    <a href="{{ url_for('add_person',type='inquilino') }}" class="btn btn-primary mb-3">Agregar Inquilino</a>
+{% endif %}
 {% endblock %}

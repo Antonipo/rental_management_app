@@ -38,6 +38,7 @@ class RentalContract(db.Model):
     payment_date = db.Column(db.Date, nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)
+    count = db.Column(db.Boolean,default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

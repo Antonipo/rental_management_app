@@ -1,8 +1,13 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import after_this_request, render_template, request, redirect, send_file, url_for, flash, jsonify
+from dotenv import load_dotenv
 from app import app, db
 from app.models import Person, Property, RentalContract, Payment
-from datetime import datetime,timedelta
-from sqlalchemy import func
+from datetime import datetime,timedelta,date
+import calendar,subprocess, os,tempfile,shlex
+from sqlalchemy import func,case,and_,or_
+from sqlalchemy.orm import aliased
+
+load_dotenv()
 
 def format_date(date:str):
     fecha_obj = datetime.strptime(date, '%Y-%m-%d')
@@ -10,19 +15,84 @@ def format_date(date:str):
 
     return fecha_formateada
 
+def string_to_date(date_string):
+    try:
+        return datetime.strptime(date_string, "%Y-%m-%d").date()
+    except ValueError:
+        raise ValueError("El formato de fecha debe ser YYYY-MM-DD")
+
+def update_available_property(id:int,valor:bool):
+    update_properties = Property.query.get_or_404(id)
+    update_properties.available = valor
+    db.session.commit()
+
+def add_months_to_date(current_date, months_to_add:int):
+    if not isinstance(months_to_add, int) or months_to_add < 0 or months_to_add > 60:
+        raise ValueError("months_to_add debe ser un entero entre 0 y 60")
+
+    year = current_date.year
+    month = current_date.month
+    day = current_date.day
+
+    total_months = month + months_to_add
+    new_year = year + (total_months - 1) // 12
+    new_month = ((total_months - 1) % 12) + 1
+
+    _, last_day = calendar.monthrange(new_year, new_month)
+    new_day = min(day, last_day)
+
+    return date(new_year, new_month, new_day)
+
+def get_payment_notification():
+    current_date = datetime.now().date()
+    seven_days_from_now = current_date + timedelta(days=15)
+
+    expired_payments = Payment.query.filter(
+        and_(
+            Payment.status == 'pending',
+            Payment.date < current_date
+        )
+    ).update({'status': 'expired'}, synchronize_session='fetch')
+
+    if expired_payments > 0:
+        db.session.commit()
+
+    payments = db.session.query(
+        Payment, 
+        RentalContract, 
+        Property,
+        case(
+            (Payment.date < current_date, 'red'),
+            else_='green'
+        ).label('alert')
+    ).join(RentalContract, Payment.contract_id == RentalContract.id)\
+     .join(Property, RentalContract.property_id == Property.id)\
+     .filter(and_(
+         Payment.status.in_(['pending', 'expired']),
+         Payment.date <= seven_days_from_now
+     ))\
+     .order_by(Payment.date.asc())
+    return payments
+
 @app.route('/')
 def index():
-    return redirect(url_for('persons',type='propietario'))
+    return redirect(url_for('list_persons', type='propietario', start='True'))
 
 ## persons
 @app.route('/persons')
 @app.route('/persons/<string:type>')
-def list_persons(type:str=None):
+def list_persons(type:str=None,start:str=None):
+    start = request.args.get('start', 'False')
     if type:
-        persons = Person.query.filter(Person.type_person ==type)
+        persons = Person.query.filter(Person.type_person ==type).order_by(Person.id.asc())
     else:
         persons = Person.query.all()
-    return render_template('persons/list.html', persons=persons,type=type)
+
+    if start == 'True':
+        payments = get_payment_notification()
+        return render_template('notification/notification.html', persons=persons,type=type,payments=payments)
+    else:
+        return render_template('persons/list.html', persons=persons,type=type)
 
 @app.route('/persons/add', methods=['GET', 'POST'])
 @app.route('/persons/add/<string:type>', methods=['GET', 'POST'])
@@ -76,7 +146,6 @@ def delete_person(id):
     return redirect(url_for('list_persons'))
 
 ## routs of properties
-
 @app.route('/properties')
 @app.route('/properties/<int:id>')
 def list_properties(id:int=None):
@@ -157,7 +226,6 @@ def delete_property(id):
         flash('Propiedad eliminado correctamente', 'success')
     except Exception as error:
         flash(f'Error a eliminar propiedad, msg {error}', 'danger')
-        print(error)
 
     return redirect(url_for('list_properties',id=owner_id))
 
@@ -165,20 +233,56 @@ def delete_property(id):
 @app.route('/rental_contracts')
 @app.route('/rental_contracts/<int:id>')
 def list_rental_contracts(id:int=None):
+    current_date = datetime.now().date()
+    seven_days_from_now = current_date + timedelta(days=7)
     if id:
+        expired_rentalcontract = RentalContract.query.filter(
+            and_(
+                RentalContract.end_date < current_date
+            )
+        ).update({'status': 'expired','count':True}, synchronize_session='fetch')
+
+        if expired_rentalcontract > 0:
+            db.session.commit()
+
+        update_properties = RentalContract.query.filter(
+        and_(
+            RentalContract.status == 'expired',
+            Payment.date < current_date,
+            RentalContract.count == False
+        )).all()
+
+        if len(update_properties) > 0:
+            for upade in update_properties:
+                update_available_property(upade.property_id,True)
+
         person = Person.query.get_or_404(id)
-        rental_contracts = RentalContract.query.join(Property, Person.id == Property.owner_id).join(RentalContract, Property.id == RentalContract.property_id).add_columns(
-            RentalContract.id,
-            RentalContract.rent_amount,
-            RentalContract.deposit_amount,
-            RentalContract.status,
-            RentalContract.payment_date,
-            RentalContract.start_date,
-            RentalContract.end_date,
-            Person.first_name.label('tenant_first_name'),
-            Person.last_name.label('tenant_last_name'),
-            Property.name.label('property_name')
-        ).filter(Person.id == id)
+        Tenant = aliased(Person)
+        Owner = aliased(Person)
+        rental_contracts = (
+            RentalContract.query
+            .join(Property, RentalContract.property_id == Property.id)
+            .join(Tenant, RentalContract.tenant_id == Tenant.id)
+            .join(Owner, Property.owner_id == Owner.id)
+            .add_columns(
+                RentalContract.id,
+                RentalContract.rent_amount,
+                RentalContract.deposit_amount,
+                RentalContract.status,
+                RentalContract.payment_date,
+                RentalContract.start_date,
+                RentalContract.end_date,
+                func.concat(Tenant.first_name, ' ', Tenant.last_name).label('tenant'),
+                Property.name.label('property_name'),
+                case(
+                    (RentalContract.end_date < current_date, 'red'),
+                    (RentalContract.end_date < seven_days_from_now,'yellow'),
+                    else_='green'
+                ).label('alert')
+            )
+            .filter(Owner.id == id).order_by(RentalContract.status.asc(),RentalContract.start_date.asc())
+            # .order_by(RentalContract.start_date.desc())
+        )
         return render_template('rental_contracts/list.html', rental_contracts=rental_contracts,person=person)
     else:
         rental_contracts = RentalContract.query.join(Person, RentalContract.tenant_id == Person.id)\
@@ -214,7 +318,7 @@ def add_rental_contract(id:int=None):
             status=request.form['status'],
             payment_date=format_date(request.form['payment_date']),
             start_date=format_date(request.form['start_date']),
-            end_date=format_date(request.form['end_date']) if request.form['end_date'] else None
+            end_date= add_months_to_date(string_to_date(request.form['start_date']),int(request.form['end_date'])) if request.form['end_date'] else None
         )
         db.session.add(new_contract)
         db.session.commit()
@@ -234,8 +338,11 @@ def edit_rental_contract(id):
     contract = RentalContract.query.get_or_404(id)
     tenants = Person.query.all()
     properties = Property.query.all()
+    properties_person=Property.query.get_or_404(contract.property_id)
+    person=Person.query.get_or_404(properties_person.owner_id)
     
     if request.method == 'POST':
+        person_id = int(request.form['person_id'])
         contract.tenant_id = int(request.form['tenant_id'])
         contract.property_id = int(request.form['property_id'])
         contract.rent_amount = float(request.form['rent_amount'])
@@ -243,7 +350,7 @@ def edit_rental_contract(id):
         contract.status = request.form['status']
         contract.payment_date = format_date(request.form['payment_date'])
         contract.start_date = format_date(request.form['start_date'])
-        contract.end_date = format_date(request.form['end_date']) if request.form['end_date'] else None
+        contract.end_date = add_months_to_date(string_to_date(request.form['start_date']),int(request.form['end_date'])) if request.form['end_date'] else None
         contract.updated_at = datetime.utcnow()
         
         flash('Rental contract updated successfully', 'success')
@@ -253,9 +360,9 @@ def edit_rental_contract(id):
             update_properties.available = True
 
         db.session.commit()
-        return redirect(url_for('list_rental_contracts'))
+        return redirect(url_for('list_rental_contracts',id=person_id))
     
-    return render_template('rental_contracts/edit.html', contract=contract, tenants=tenants, properties=properties)
+    return render_template('rental_contracts/edit.html', contract=contract, tenants=tenants, properties=properties, person=person)
 
 @app.route('/rental_contracts/delete/<int:id>', methods=['POST'])
 def delete_rental_contract(id):
@@ -274,17 +381,60 @@ def delete_rental_contract(id):
     except Exception as error:
         flash(f'Error al eliminar el contrato - msg: {error}', 'danger')
     
-    return redirect(url_for('list_rental_contracts'))
+    return redirect(url_for('list_rental_contracts',id=property.owner_id))
 
 ## routes payments
 @app.route('/payments')
 def list_payments():
-    payments = db.session.query(Payment, RentalContract, Property)\
-        .join(RentalContract, Payment.contract_id == RentalContract.id)\
-        .join(Property, RentalContract.property_id == Property.id)\
-        .filter(Payment.status == 'pending')\
-        .all()
+    current_date = datetime.now().date()
+    start_of_month = current_date.replace(day=1)
+    end_of_month = (start_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+    expired_payments = Payment.query.filter(
+        and_(
+            Payment.status == 'pending',
+            Payment.date < current_date
+        )
+    ).update({'status': 'expired'}, synchronize_session='fetch')
+
+    if expired_payments > 0:
+        db.session.commit()
+
+    payments = db.session.query(
+        Payment, 
+        RentalContract, 
+        Property,
+        func.concat(Person.first_name, ' ',Person.last_name,).label('tenant'),
+        Person.phone_number.label('phone'),
+        case(
+            (Payment.status == 'expired', 'red'),
+            (and_(Payment.status == 'pending', Payment.date < current_date), 'red'),
+            else_='green'
+        ).label('alert')
+    ).join(RentalContract, Payment.contract_id == RentalContract.id)\
+    .join(Property, RentalContract.property_id == Property.id)\
+    .join(Person, RentalContract.tenant_id == Person.id)\
+    .filter(
+        or_(
+            and_(Payment.date >= start_of_month, Payment.date <= end_of_month, Payment.status.in_(['pending'])),
+            Payment.status == 'expired'
+        )
+    )\
+    .order_by(Payment.date.asc())
+
     return render_template('payments/list.html', payments=payments)
+
+def get_next_payment_date(current_date):
+    year = current_date.year
+    month = current_date.month
+    day = current_date.day
+    month += 1
+    if month > 12:
+        month = 1
+        year += 1
+    _, last_day = calendar.monthrange(year, month)
+    next_day = min(day, last_day)
+    return datetime(year, month, next_day)
 
 @app.route('/payments/<int:id>/pay', methods=['POST'])
 def pay_rent(id):
@@ -292,10 +442,8 @@ def pay_rent(id):
     payment.status = 'paid'
     contract= RentalContract.query.get_or_404(payment.contract_id)
     
-    # Verificar si el contrato está activo antes de crear el siguiente pago
     if contract.status == 'active':
-        # Crear el siguiente pago
-        next_payment_date = payment.date + timedelta(days=30)
+        next_payment_date = get_next_payment_date(payment.date)
         next_payment = Payment(
             contract_id=payment.contract_id,
             date=next_payment_date,
@@ -312,41 +460,59 @@ def pay_rent(id):
     
     return redirect(url_for('list_payments'))
 
-# @app.route('/rental_contracts/add', methods=['GET', 'POST'])
-# def add_rental_contract():
-#     tenants = Person.query.all()
-#     properties = Property.query.filter_by(available=True).all()
+@app.route('/download_backup')
+def download_backup():
+    pg_dump_path = os.getenv("PG_DUMP_PATH")
+    db_name = os.getenv("PG_DB_NAME")
+    db_user = os.getenv("PG_DB_USER")
+    db_password = os.getenv("PG_DB_PASSWORD")
+    backup_directory = os.getenv("BACKUP_DIRECTORY")
     
-#     if request.method == 'POST':
-#         new_contract = RentalContract(
-#             tenant_id=int(request.form['tenant_id']),
-#             property_id=int(request.form['property_id']),
-#             rent_amount=float(request.form['rent_amount']),
-#             deposit_amount=float(request.form['deposit_amount']),
-#             status=request.form['status'],
-#             payment_date=datetime.strptime(request.form['payment_date'], '%d/%m/%Y').date(),
-#             start_date=datetime.strptime(request.form['start_date'], '%d/%m/%Y').date(),
-#             end_date=datetime.strptime(request.form['end_date'], '%d/%m/%Y').date() if request.form['end_date'] else None
-#         )
-#         db.session.add(new_contract)
-#         db.session.flush()  # This will assign an id to new_contract without committing the transaction
-        
-#         # Create the first payment
-#         first_payment = Payment(
-#             contract_id=new_contract.id,
-#             date=new_contract.payment_date,
-#             amount=new_contract.rent_amount,
-#             status='pending'
-#         )
-#         db.session.add(first_payment)
-        
-#         # Update property availability
-#         property = Property.query.get(new_contract.property_id)
-#         property.available = False
-        
-#         db.session.commit()
-        
-#         flash('Rental contract added successfully and first payment scheduled.', 'success')
-#         return redirect(url_for('list_rental_contracts'))
+    if not db_password:
+        return "Error: La contraseña de la base de datos no está configurada", 500
     
-#     return render_template('rental_contracts/add.html', tenants=tenants, properties=properties)
+    os.makedirs(backup_directory, exist_ok=True)
+    
+    backup_filename = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql"
+    backup_file = os.path.join(backup_directory, backup_filename)
+    
+    pgpass_path = os.path.join(os.path.dirname(__file__), '.pgpass')
+    with open(pgpass_path, 'w') as pgpass_file:
+        pgpass_file.write(f"*:*:*:{db_user}:{db_password}")
+    os.chmod(pgpass_path, 0o600)
+    
+    try:
+        os.environ['PGPASSFILE'] = pgpass_path
+
+        command = f'"{pg_dump_path}" -U {db_user} -d {db_name} -f "{backup_file}"'
+        
+        result=subprocess.run(command, shell=True, check=True)
+        if result:
+            file_size = os.path.getsize(backup_file)
+            if file_size > 0:
+                return jsonify({
+                    "message": "Backup creado exitosamente",
+                    "file": backup_filename,
+                    "size": file_size
+                }), 200
+            else:
+                return jsonify({"error": "El archivo de backup está vacío"}), 500
+        else:
+            return jsonify({"error": "No se pudo crear el archivo de backup"}), 500
+    except subprocess.CalledProcessError as e:
+        return f"Error al ejecutar pg_dump: {str(e)}", 500
+    except Exception as e:
+        return f"Error al crear el respaldo: {str(e)}", 500
+    finally:
+        if os.path.exists(pgpass_path):
+            os.remove(pgpass_path)
+
+@app.route('/get_backup/<filename>')
+def get_backup(filename):
+    backup_directory = r"C:\ruta\donde\guardar\backups"  # Debe ser la misma ruta que en download_backup
+    file_path = os.path.join(backup_directory, filename)
+    
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True)
+    else:
+        return jsonify({"error": "Archivo no encontrado"}), 404
