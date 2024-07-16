@@ -1,9 +1,9 @@
-from flask import after_this_request, render_template, request, redirect, send_file, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from dotenv import load_dotenv
 from app import app, db
 from app.models import Person, Property, RentalContract, Payment
 from datetime import datetime,timedelta,date
-import calendar,subprocess, os,tempfile,shlex
+import calendar,subprocess, os
 from sqlalchemy import func,case,and_,or_
 from sqlalchemy.orm import aliased
 
@@ -506,13 +506,3 @@ def download_backup():
     finally:
         if os.path.exists(pgpass_path):
             os.remove(pgpass_path)
-
-@app.route('/get_backup/<filename>')
-def get_backup(filename):
-    backup_directory = r"C:\ruta\donde\guardar\backups"  # Debe ser la misma ruta que en download_backup
-    file_path = os.path.join(backup_directory, filename)
-    
-    if os.path.exists(file_path):
-        return send_file(file_path, as_attachment=True)
-    else:
-        return jsonify({"error": "Archivo no encontrado"}), 404
